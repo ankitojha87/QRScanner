@@ -1,0 +1,29 @@
+﻿
+@{
+    ViewData["Title"] = "QRCodeScannerForm";
+}
+
+<h1>QRCodeScannerForm</h1>
+
+@using (Html.BeginForm("Scan", "QRCode", FormMethod.Post, new { enctype = "multipart/form-data" }))
+{
+    @Html.AntiForgeryToken()
+
+<div class="form-horizontal">
+    <h4>Upload QR Code file</h4>
+
+    <div class="form-group">
+        
+        @Html.TextBox("file", "", new { type = "file" }) <br />
+        
+    </div>
+
+    <div class="form-group">
+        <div class="col-md-offset-2 col-md-10">
+            <input type="submit" value="Submit" />
+        </div>
+    </div>
+
+</div>
+
+        }
