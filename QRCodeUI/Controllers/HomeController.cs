@@ -23,70 +23,39 @@ namespace QRCodeUI.Controllers
             _logger = logger;
         }
 
-        // We can check file size using conditional code as well and show message to end user
-        [RequestSizeLimit(1048576)]
         public  IActionResult Index([FromForm]QRCodeFileModel myFile)
         {
             try
             {
                 var file = myFile.Image;
-                var allowedExtensions = new[] { ".png", ".gif", ".jpeg" };
-                                
+                // var file = Request.Form.Files[0];
                 if (file != null && file.Length > 0)
-                {
-                    ViewBag.FileLength = "";
-                    var folderName = Path.Combine("Resources", "Images");
-                    var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-                    var fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
-                    var fullPath = Path.Combine(pathToSave, fileName);
-                    var flag = false;
-                    var fileExt = Path.GetExtension(fileName);
-                    foreach (var itm in allowedExtensions)
-                    {
-                        if (itm.Contains(fileExt))
-                        {
-                            flag = true;
-                        }
-                    }
-                    if (flag)
-                    {
-                        // To Create a file on server
-                        using (var stream = new FileStream(fullPath, FileMode.Create))
-                        {
-                            file.CopyTo(stream);
-                        }
+                {                    
+                    FileStream fs = new FileStream("d:\\download.png" , FileMode.Open, FileAccess.Read);
+                    byte[] data = new byte[fs.Length];
+                    fs.Read(data, 0, data.Length);
+                    fs.Close();
 
+                    // Generate post objects
+                    Dictionary<string, object> postParameters = new Dictionary<string, object>();
+                    postParameters.Add("filename", "download.png");
+                    postParameters.Add("fileformat", "png");
+                    postParameters.Add("file", new FormUploadModel.FileParameter(data, "download.png", "multipart/form-data"));
 
-                        var fileFormat = fileExt.Trim('.');
-                        FileStream fs = new FileStream(fullPath, FileMode.Open, FileAccess.Read);
-                        byte[] data = new byte[fs.Length];
-                        fs.Read(data, 0, data.Length);
-                        fs.Close();
+                    // Create request and receive response
+                    string postURL = "http://api.qrserver.com/v1/read-qr-code/?file=";
+                    string userAgent = "file";
+                    HttpWebResponse webResponse = FormUploadModel.MultipartFormDataPost(postURL, userAgent, postParameters);
 
-                        // Generate post objects
-                        Dictionary<string, object> postParameters = new Dictionary<string, object>();
-                        postParameters.Add("filename", fileName);
-                        postParameters.Add("fileformat", fileFormat);
-                        postParameters.Add("file", new FormUploadModel.FileParameter(data, fileName, "multipart/form-data"));
+                    // Process response
+                    StreamReader responseReader = new StreamReader(webResponse.GetResponseStream());
+                    string fullResponse = responseReader.ReadToEnd();
+                    webResponse.Close();
+                    // Response.Write(fullResponse);
 
-                        // Create request and receive response
-                        string postURL = "http://api.qrserver.com/v1/read-qr-code/?file=";
-                        string userAgent = "file";
-                        HttpWebResponse webResponse = FormUploadModel.MultipartFormDataPost(postURL, userAgent, postParameters);
+                    // return Ok(null);
 
-                        // Process response
-                        StreamReader responseReader = new StreamReader(webResponse.GetResponseStream());
-                        string fullResponse = responseReader.ReadToEnd();
-                        webResponse.Close();
-
-                        ViewBag.Message = fullResponse;
-
-                        // Delete QR file created on server
-                        System.IO.File.Delete(fullPath);
-                    }
-                    else {
-                        ViewBag.Message = "File type should be .png/.gif/.jpeg.";
-                    }
+                    ViewBag.Message = fullResponse;
                 }
                 else
                 {
